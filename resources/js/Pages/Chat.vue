@@ -4,6 +4,9 @@ newFunction();
 function newFunction() {
     <script>
         import AppLayout from '@/Layouts/AppLayout.vue';
+        import moment from 'moment';
+        
+        moment.locale('pt-br');
         
         export default {
             components: {
@@ -11,14 +14,34 @@ function newFunction() {
             },
             data() {
                 return {
-                    users: []
+                    users: [],
+                    messages: [],
+                    userActive: {}
+                }
+            },
+            methods: {
+                // Fazendo uma requisição GET das mensagens de usuário para usuário
+                loadMessages: function (userId) {
+                    axios.get(`api/users/${userId}`).then(response => {
+                        this.userActive = response.data.user
+                    });
+                    
+                    axios.get(`api/messages/${userId}`).then(response => {
+                        this.messages = response.data.messages
+                    });
+                },
+                
+                // Formatando datas
+                formatDate: function (date) {
+                    return moment(date).format('DD/MM/YY HH:mm');
                 }
             },
             mounted() {
+                // Fazendo uma requisição GET dos usuários cadastrados no sistema
                 axios.get('/api/users').then(response => {
                     this.users = response.data.users;
                 })
-            }
+            },
         }
     </script>
     ,
@@ -37,6 +60,8 @@ function newFunction() {
                             <ul>
                                 <li 
                                 v-for="user in users" :key="user.id"
+                                @click="() => {loadMessages(user.id)}"
+                                :class="(userActive && userActive.id == user.id ? 'bg-gray-200 bg-opacity-50' : '')"
                                 class="p-6 text-lg text-gray-600 leading-7 font-semibold border-bborder-gray-200 hover:bg-gray-300 hover:bg-opacity-50 hover:cursor-pointer">
                                     <p class="flex items-center">
                                         {{ user.name }}
@@ -50,20 +75,16 @@ function newFunction() {
                         <div class="w-8/12 flex flex-col justify-between overflow-y-scroll">
                             <!-- Mensagens -->
                             <div class="w-full p-6 flex flex-col">
-                                <div class="w-full mb-3 text-right">
-                                    <p class="inline-block p-2 rounded-md messageFromMe" style="max-width: 75%;">
-                                        Olá!
+                                <div
+                                    v-for="message in messages" :key="message.id"
+                                    :class="(message.from == $attrs.auth.user.id ? 'text-right' : '')"
+                                    class="w-full mb-3">
+                                    <p 
+                                        :class="(message.from == $attrs.auth.user.id ? 'messageFromMe' : 'messageToMe')"
+                                        class="inline-block p-2 rounded-md messageFromMe" style="max-width: 75%;">
+                                        {{ message.content }}
                                     </p>
-                                    <span class="block mt-1 text-xs text-gray-500">02/08/2022 21:30</span>
-                                </div>
-                            </div>
-                            
-                            <div class="w-full p-6 flex flex-col">
-                                <div class="w-full mb-3">
-                                    <p class="inline-block p-2 rounded-md messageToMe" style="max-width: 75%;">
-                                        Oi!
-                                    </p>
-                                    <span class="block mt-1 text-xs text-gray-500">02/08/2022 21:30</span>
+                                    <span class="block mt-1 text-xs text-gray-500">{{ formatDate(message.created_at) }}</span>
                                 </div>
                             </div>
                         
