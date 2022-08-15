@@ -5,6 +5,7 @@ function newFunction() {
     <script>
         import AppLayout from '@/Layouts/AppLayout.vue';
         import moment from 'moment';
+        import store from '../store';
         
         moment.locale('pt-br');
         
@@ -16,19 +17,54 @@ function newFunction() {
                 return {
                     users: [],
                     messages: [],
-                    userActive: null
+                    userActive: null,
+                    message: '',
+                }
+            },
+            computed: {
+                user() {
+                    return store.state.user;
                 }
             },
             methods: {
                 // Fazendo uma requisição GET das mensagens de usuário para usuário
-                loadMessages: function (userId) {
+                loadMessages: async function (userId) {
                     axios.get(`api/users/${userId}`).then(response => {
                         this.userActive = response.data.user
                     });
                     
-                    axios.get(`api/messages/${userId}`).then(response => {
+                    await axios.get(`api/messages/${userId}`).then(response => {
                         this.messages = response.data.messages
                     });
+                    
+                    this.scrollToBottom();
+                },
+                
+                // Fazendo um POST para criação de nova mensagem
+                sendMessage: async function (userId) {
+                    await axios.post(`api/messages/store`, {
+                        'content': this.message,
+                        'to': this.userActive.id,
+                    }).then(response => {
+                        this.messages.push({
+                            'from': this.user.id,
+                            'to': this.userActive.id,
+                            'content': this.message,
+                            'created_at': new Date().toISOString(),
+                            'updated_at': new Date().toISOString(),
+                        });
+                        
+                        this.message = '';
+                    });
+                    
+                    this.scrollToBottom();
+                },
+                
+                // Scroll automático do chat
+                scrollToBottom: function () {
+                    if (this.messages.lenght) {
+                        document.querySelectorAll('.message:last-child')[0].scrollIntoView();
+                    }
                 },
                 
                 // Formatando datas
@@ -37,6 +73,7 @@ function newFunction() {
                 }
             },
             mounted() {
+                console.log(this.user);
                 // Fazendo uma requisição GET dos usuários cadastrados no sistema
                 axios.get('/api/users').then(response => {
                     this.users = response.data.users;
@@ -78,7 +115,7 @@ function newFunction() {
                                 <div
                                     v-for="message in messages" :key="message.id"
                                     :class="(message.from == $attrs.auth.user.id ? 'text-right' : '')"
-                                    class="w-full mb-3">
+                                    class="w-full mb-3 message">
                                     <p 
                                         :class="(message.from == $attrs.auth.user.id ? 'messageFromMe' : 'messageToMe')"
                                         class="inline-block p-2 rounded-md messageFromMe" style="max-width: 75%;">
@@ -90,14 +127,13 @@ function newFunction() {
                         
                             <!-- Formulário para envio das mensagens -->
                             <div v-if="userActive" class="w-full bg-gray-200 bg-opacity-25 p-6 border-t border-gray-200">
-                                <form>
+                                <form v-on:submit.prevent="sendMessage">
                                     <div class="flex rounded-md overflow-hidden border border-gray-100">
-                                        <input type="text" class="flex-1 px-4 py-2 text-sm border-transparentfocus:border-transparent focus:ring-0">
+                                        <input v-model="message" type="text" class="flex-1 px-4 py-2 text-sm border-transparentfocus:border-transparent focus:ring-0">
                                         <button type="submit" class="bg-indigo-500 hover:bg-indigo-600 text-whitepx-4 py-2">Enviar</button>
                                     </div>
                                 </form>
                             </div>
-                        
                         </div>
                     </div>
                 </div>
