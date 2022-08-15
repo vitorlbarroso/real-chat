@@ -16,7 +16,7 @@ function newFunction() {
                 return {
                     users: [],
                     messages: [],
-                    userActive: {}
+                    userActive: null
                 }
             },
             methods: {
@@ -89,7 +89,7 @@ function newFunction() {
                             </div>
                         
                             <!-- Formulário para envio das mensagens -->
-                            <div class="w-full bg-gray-200 bg-opacity-25 p-6 border-t border-gray-200">
+                            <div v-if="userActive" class="w-full bg-gray-200 bg-opacity-25 p-6 border-t border-gray-200">
                                 <form>
                                     <div class="flex rounded-md overflow-hidden border border-gray-100">
                                         <input type="text" class="flex-1 px-4 py-2 text-sm border-transparentfocus:border-transparent focus:ring-0">
